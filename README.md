@@ -1,6 +1,4 @@
-# Supervisório GD INRI
-
-### Sistema supervisório elaborado em Python
+# Servidor Python para comunicação com inversor da usina fotovoltaica 100 kW do INRI
 
 Data: 01/09/2020
 

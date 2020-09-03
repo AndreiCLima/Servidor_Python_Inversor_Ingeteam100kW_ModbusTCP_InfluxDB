@@ -40,3 +40,14 @@ def main():
 		time.sleep(60)
 		Client_ModBus.close()
 		
+		
+def converter_parameters(Input_Registers):
+    '''Recebe os parâmetro lidos pela main e converte.....'''
+    Partial_Energy_delivered_the_unit_since_user_reset_value = Input_Registers[0][0] x 65536 + Input_Registers[0][1]
+    Daily_energy_value       = (Input_Registers[1][0] x 65536 + Input_Registers[1][1]) / 100
+    Grid_RMS_voltage_phase_1 = Input_Registers[2] / 10
+    Grid_RMS_voltage_phase_2 = Input_Registers[3] / 10
+    Grid_RMS_voltage_phase_3 = Input_Registers[4] / 10
+    Output_apparent_power    = Input_Registers[5] * 10
+    Output_active_power      = Input_Registers[6] * 10
+    Input_current            = Input_Registers[7] / 100

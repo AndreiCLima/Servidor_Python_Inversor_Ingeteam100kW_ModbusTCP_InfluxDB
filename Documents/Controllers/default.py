@@ -1,7 +1,8 @@
 # Programa Principal, onde será rodado o servidor
 # Importações:
 from pyModbusTCP.client import ModbusClient
-from Configurations.ModBusHost import HOST 
+from Documents.Configurations.ModBusHost import HOST 
+import time
 
 def main():
 	"""
@@ -19,11 +20,23 @@ def main():
 
 
 	"""
+	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32] # Endereço requisitado ao inversor
+	Inverter_Registers_Length = [2,2,2,2,1,1,1,1,1,1] # Dimensão do registrador
+	Input_Registers = []
+	control_flag = False
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
-	Client_ModBus.open()
-	Client_ModBus.debug(True)
-	Registradores = Client_ModBus.read_holding_registers(1001,2)
-	if Registradores:
-		print(Registradores)
-	else:
-		print("Erro de leitura")
+	while True:
+		Client_ModBus.open()
+		#Client_ModBus.debug(True)
+		for Address in range(len(Inverter_Registers_Address)):
+			if Inverter_Registers_Length[Address] == 2 and not(control_flag):
+				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
+				control_flag = True
+			elif Inverter_Registers_Length[Address] == 2 and control_flag: 
+				control_flag = False
+			else:
+				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
+		print(Input_Registers)
+		time.sleep(60)
+		Client_ModBus.close()
+		

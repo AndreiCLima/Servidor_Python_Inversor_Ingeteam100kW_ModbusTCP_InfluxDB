@@ -1,6 +1,7 @@
 # Programa Principal, onde será rodado o servidor
 # Importações:
 from pyModbusTCP.client import ModbusClient
+from Configurations.ModBusHost import HOST 
 
 def main():
 	"""

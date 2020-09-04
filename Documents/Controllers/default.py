@@ -36,21 +36,41 @@ def main():
 				control_flag = False
 			else:
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-		print(Input_Registers)
-		time.sleep(60)
+		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
+		Grid_3Phase_DaylyEnergy_Instant_kWh = convert(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
+		Grid_Phase1_RMSVoltage_Instant_V = convert(Input_Registers[2], Scale_Factor = 0.1)
+		Grid_Phase2_RMSVoltage_Instant_V = convert(Input_Registers[3], Scale_Factor = 0.1)
+		Grid_Phase3_RMSVoltage_Instant_V = convert(Input_Registers[4], Scale_Factor = 0.1)
+		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert(Input_Registers[5], Scale_Factor = 10)
+		Grid_3Phase_Instant_Delivered_Real_Power_VA = convert(Input_Registers[6], Scale_Factor = 10)
+		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		Client_ModBus.close()
+		time.sleep(60)
 		
 		
-def converter_parameters_uint_32(Uint_32_Input_Registers):
-    '''Recebe os parâmetro lidos do registrador do inversor e converte para grandeza real'''
-    return Input_Registers[0][0] * 65536 + Input_Registers[0][1]
+def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
+    """
+    Recebe os parâmetro lidos do registrador do inversor
+	
+	Estradas: 
+
+		Uint_32_Input_Registers_Most_Significant_Bits: Conjunto de Bits mais significativos da variável (de 32 a 16)
+		Uint_32_Input_Registers_Less_Significant_Bits: Conjunto de Bits menos significativos da variável (de 15 a 0)
+	
+	Função: Converter o valor dos registradores do inversor em valores do tipo inteiro
+
+    """
+    return Uint_32_Input_Registers_Most_Significant_Bits * 65536 + Uint_32_Input_Registers_Less_Significant_Bits
 
 
-def(, operação = 0.1)    Grid_3Phase_Energy_LastReset_kWh                             = converter_parameters_uint_32(Uint_32_Input_Registers)
-    Daily_energy_value_kWh                                       = converter_parameters_uint_32(Uint_32_Input_Registers) / 100
-    Grid_RMS_voltage_phase_1                                     = Input_Registers[2] / 10
-    Grid_RMS_voltage_phase_2                                     = Input_Registers[3] / 10
-    Grid_RMS_voltage_phase_3                                     = Input_Registers[4] / 10
-    Grid_3Phase_Instant_Delivered_Apparent_Power_VA              = Input_Registers[5] * 10
-    Grid_3Phase_Instant_Delivered_Active_Power_W                 = Input_Registers[6] * 10
-    PV_Input_TotalCurrent_A                                      = Input_Registers[7] / 100
+def convert_input_register_value_in_real_value(Input_Register_Value, Scale_Factor):
+	"""
+	Recebe o parâmetro lido pelo inversor, já convertido de uint32 (se necessário)
+
+	Entradas:
+		Input_Register_Value: Valor enviado pelo inversor, sem conversão para valores reais
+		Scale_Factor: Fator de escala necessário para converter o número em um número com valor real (Tensão, Corrente, Potência, Energia, etc)
+
+	Função: Dado um número do tipo inteiro, e um fator de escala, essa função realiza a conversão deste número para valores de grandezas reais, como tensão em Volts, Corrente em Amperes, etc.
+	"""
+    return Input_Register_Value*Scale_Factor

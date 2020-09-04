@@ -41,10 +41,13 @@ def main():
 		Client_ModBus.close()
 		
 		
-def converter_parameters(Input_Registers):
+def converter_parameters_uint_32(Uint_32_Input_Registers):
     '''Recebe os parâmetro lidos do registrador do inversor e converte para grandeza real'''
-    Partial_Energy_delivered_the_unit_since_user_reset_value_kWh = Input_Registers[0][0] * 65536 + Input_Registers[0][1]
-    Daily_energy_value_kWh                                       = (Input_Registers[1][0] * 65536 + Input_Registers[1][1]) / 100
+    return Input_Registers[0][0] * 65536 + Input_Registers[0][1]
+
+
+def(, operação = 0.1)    Grid_3Phase_Energy_LastReset_kWh                             = converter_parameters_uint_32(Uint_32_Input_Registers)
+    Daily_energy_value_kWh                                       = converter_parameters_uint_32(Uint_32_Input_Registers) / 100
     Grid_RMS_voltage_phase_1                                     = Input_Registers[2] / 10
     Grid_RMS_voltage_phase_2                                     = Input_Registers[3] / 10
     Grid_RMS_voltage_phase_3                                     = Input_Registers[4] / 10

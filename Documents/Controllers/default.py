@@ -42,12 +42,12 @@ def main():
 		
 		
 def converter_parameters(Input_Registers):
-    '''Recebe os parâmetro lidos do registrador e converte para grandeza real'''
-    Partial_Energy_delivered_the_unit_since_user_reset_value = Input_Registers[0][0] x 65536 + Input_Registers[0][1]
-    Daily_energy_value                                       = (Input_Registers[1][0] x 65536 + Input_Registers[1][1]) / 100
-    Grid_RMS_voltage_phase_1                                 = Input_Registers[2] / 10
-    Grid_RMS_voltage_phase_2                                 = Input_Registers[3] / 10
-    Grid_RMS_voltage_phase_3                                 = Input_Registers[4] / 10
-    Output_apparent_power    = Input_Registers[5] * 10
-    Output_active_power      = Input_Registers[6] * 10
-    Input_current            = Input_Registers[7] / 100
+    '''Recebe os parâmetro lidos do registrador do inversor e converte para grandeza real'''
+    Partial_Energy_delivered_the_unit_since_user_reset_value_kWh = Input_Registers[0][0] * 65536 + Input_Registers[0][1]
+    Daily_energy_value_kWh                                       = (Input_Registers[1][0] * 65536 + Input_Registers[1][1]) / 100
+    Grid_RMS_voltage_phase_1                                     = Input_Registers[2] / 10
+    Grid_RMS_voltage_phase_2                                     = Input_Registers[3] / 10
+    Grid_RMS_voltage_phase_3                                     = Input_Registers[4] / 10
+    Grid_3Phase_Instant_Delivered_Apparent_Power_VA              = Input_Registers[5] * 10
+    Grid_3Phase_Instant_Delivered_Active_Power_W                 = Input_Registers[6] * 10
+    PV_Input_TotalCurrent_A                                      = Input_Registers[7] / 100

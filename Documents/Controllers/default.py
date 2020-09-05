@@ -17,23 +17,26 @@ def main():
 	Client_ModBus (Objeto responsável pela comunicação ModBus TCP/IP).
 
 	Variáveis:
-
+	Inverter_Register_Addres: Endereço do registrador requisitado ao inversor
+	Inverter_Register_Length: Dimensão do Registrador a ser lido, considerando-se registradore de 16 bits.
+	Control_Flag: flag de controle, responsável por verificar qual endereço do registrador está sendo acessado no momento,
+		e se esse endereço está sendo lido de maneira correta
 
 	"""
 	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32] # Endereço requisitado ao inversor
 	Inverter_Registers_Length = [2,2,2,2,1,1,1,1,1,1] # Dimensão do registrador
 	Input_Registers = []
-	control_flag = False
+	Control_Flag = False
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
 	while True:
 		Client_ModBus.open()
 		#Client_ModBus.debug(True)
 		for Address in range(len(Inverter_Registers_Address)):
-			if Inverter_Registers_Length[Address] == 2 and not(control_flag):
+			if Inverter_Registers_Length[Address] == 2 and not(Control_Flag):
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-				control_flag = True
-			elif Inverter_Registers_Length[Address] == 2 and control_flag: 
-				control_flag = False
+				Control_Flag = True
+			elif Inverter_Registers_Length[Address] == 2 and Control_Flag: 
+				Control_Flag = False
 			else:
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
 		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
@@ -42,7 +45,7 @@ def main():
 		Grid_Phase2_RMSVoltage_Instant_V = convert(Input_Registers[3], Scale_Factor = 0.1)
 		Grid_Phase3_RMSVoltage_Instant_V = convert(Input_Registers[4], Scale_Factor = 0.1)
 		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert(Input_Registers[5], Scale_Factor = 10)
-		Grid_3Phase_Instant_Delivered_Real_Power_VA = convert(Input_Registers[6], Scale_Factor = 10)
+		Grid_3Phase_Instant_Delivered_Real_Power_W = convert(Input_Registers[6], Scale_Factor = 10)
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		Client_ModBus.close()
 		time.sleep(60)

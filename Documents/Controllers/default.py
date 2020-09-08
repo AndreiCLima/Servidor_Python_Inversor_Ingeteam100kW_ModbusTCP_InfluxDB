@@ -1,7 +1,9 @@
 # Programa Principal, onde será rodado o servidor
 # Importações:
 from pyModbusTCP.client import ModbusClient
-from Documents.Configurations.ModBusHost import HOST 
+from influxdb import InfluxDBClient
+from Documents.Configurations.ModBusHost import HOST
+from Documents.Configurations.DataBaseConfigurations import DataBase, DataBaseHOST, DataBasePORT, UserName, Password 
 import time
 
 def main():
@@ -15,6 +17,7 @@ def main():
 
 	Objetos:
 	Client_ModBus (Objeto responsável pela comunicação ModBus TCP/IP).
+	Client_InfluxDB (Objeto responsável pela comunicação com o Banco de Dados)
 
 	Variáveis:
 	Inverter_Register_Addres: Endereço do registrador requisitado ao inversor
@@ -39,15 +42,27 @@ def main():
 				Control_Flag = False
 			else:
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
-		Grid_3Phase_DaylyEnergy_Instant_kWh = convert(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
-		Grid_Phase1_RMSVoltage_Instant_V = convert(Input_Registers[2], Scale_Factor = 0.1)
-		Grid_Phase2_RMSVoltage_Instant_V = convert(Input_Registers[3], Scale_Factor = 0.1)
-		Grid_Phase3_RMSVoltage_Instant_V = convert(Input_Registers[4], Scale_Factor = 0.1)
-		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert(Input_Registers[5], Scale_Factor = 10)
-		Grid_3Phase_Instant_Delivered_Real_Power_W = convert(Input_Registers[6], Scale_Factor = 10)
+		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
+		Grid_3Phase_DaylyEnergy_Instant_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
+		Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
+		Grid_Phase2_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[3][0], Scale_Factor = 0.1)
+		Grid_Phase3_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[4][0], Scale_Factor = 0.1)
+		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert_input_register_value_in_real_value(Input_Registers[5][0], Scale_Factor = 10)
+		Grid_3Phase_Instant_Delivered_Real_Power_W = convert_input_register_value_in_real_value(Input_Registers[6][0], Scale_Factor = 10)
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		Client_ModBus.close()
+		Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
+		Json_Body = [
+		{
+			"measurement" : "Grid_3Phase_DeliveredEnergy_LastReset_kWh",
+			"fields" : {
+				"value" : Grid_3Phase_DeliveredEnergy_LastReset_kWh
+			}
+		}
+		]
+		Client_InfluxDB.write_points(Json_Body)
+		Resultado = Client_InfluxDB.query('select value from Grid_3Phase_DeliveredEnergy_LastReset_kWh')
+		print(Resultado)
 		time.sleep(60)
 		
 		
@@ -76,4 +91,4 @@ def convert_input_register_value_in_real_value(Input_Register_Value, Scale_Facto
 
 	Função: Dado um número do tipo inteiro, e um fator de escala, essa função realiza a conversão deste número para valores de grandezas reais, como tensão em Volts, Corrente em Amperes, etc.
 	"""
-    return Input_Register_Value*Scale_Factor
+	return Input_Register_Value*Scale_Factor

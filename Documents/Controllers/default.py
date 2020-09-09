@@ -45,7 +45,6 @@ def main():
 				Control_Flag = False
 			else:
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-<<<<<<< HEAD
 		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_to_real_value(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
 		Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_to_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
 		Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
@@ -58,21 +57,7 @@ def main():
 		Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
 		Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 		Grid_3Phase_Instant_Delivered_Reative_Power_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
-=======
-		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
-		Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
-		Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
-		Grid_Phase2_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[3][0], Scale_Factor = 0.1)
-		Grid_Phase3_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[4][0], Scale_Factor = 0.1)
-		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert_input_register_value_in_real_value(Input_Registers[5][0], Scale_Factor = 10)
-		Grid_3Phase_Instant_Delivered_Real_Power_W = convert_input_register_value_in_real_value(Input_Registers[6][0], Scale_Factor = 10)
-		PV_Input_TotalCurrent_A = convert_input_register_value_in_real_value(Input_Registers[7][0], Scale_Factor = 0.01)
-		Grid_Phase1_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[8][0], Scale_Factor = 0.01)
-		Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
-		Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
-		Grid_3Phase_Instant_Delivered_Reative_Power_Var = convert_input_register_value_in_real_value(Input_Registers[11][0], Scale_Factor = 10)
 		Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_Instant_Delivered_Reative_Power_Var, Ts):
->>>>>>> db24cd75237a16f2caed0ee9df436a01cf39bce3
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
@@ -85,12 +70,8 @@ def main():
 		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", Grid_Phase1_RMSCurrent_Instant_A)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
-<<<<<<< HEAD
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_Var", Grid_3Phase_Instant_Delivered_Reative_Power_VAr)
-=======
-		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_Var", Grid_3Phase_Instant_Delivered_Reative_Power_Var)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
->>>>>>> db24cd75237a16f2caed0ee9df436a01cf39bce3
 		Client_ModBus.close()
 		time.sleep(Ts)
 		

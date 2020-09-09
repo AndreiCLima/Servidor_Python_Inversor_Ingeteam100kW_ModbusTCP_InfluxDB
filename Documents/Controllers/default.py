@@ -26,11 +26,12 @@ def main():
 		e se esse endereço está sendo lido de maneira correta
 
 	"""
-	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32] # Endereço requisitado ao inversor
-	Inverter_Registers_Length = [2,2,2,2,1,1,1,1,1,1] # Dimensão do registrador
+	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30] # Endereço requisitado ao inversor
+	Inverter_Registers_Length = [2,2,2,2,1,1,1,1,1,1,1,1,1,1] # Dimensão do registrador
 	Input_Registers = []
 	Control_Flag = False
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
+	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
 	while True:
 		Client_ModBus.open()
 		#Client_ModBus.debug(True)
@@ -43,26 +44,31 @@ def main():
 			else:
 				Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
 		Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
-		Grid_3Phase_DaylyEnergy_Instant_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
+		Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_in_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
 		Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
 		Grid_Phase2_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[3][0], Scale_Factor = 0.1)
 		Grid_Phase3_RMSVoltage_Instant_V = convert_input_register_value_in_real_value(Input_Registers[4][0], Scale_Factor = 0.1)
 		Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert_input_register_value_in_real_value(Input_Registers[5][0], Scale_Factor = 10)
 		Grid_3Phase_Instant_Delivered_Real_Power_W = convert_input_register_value_in_real_value(Input_Registers[6][0], Scale_Factor = 10)
+		PV_Input_TotalCurrent_A = convert_input_register_value_in_real_value(Input_Registers[7][0], Scale_Factor = 0.01)
+		Grid_Phase1_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[8][0], Scale_Factor = 0.01)
+		Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
+		Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
+		Grid_3Phase_Instant_Delivered_Reative_Power_Var = convert_input_register_value_in_real_value(Input_Registers[11][0], Scale_Factor = 10)
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", Grid_Phase1_RMSVoltage_Instant_V)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", Grid_Phase2_RMSVoltage_Instant_V)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", Grid_Phase3_RMSVoltage_Instant_V)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", Grid_3Phase_Instant_Delivered_Aparent_Power_VA)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Real_Power_W", Grid_3Phase_Instant_Delivered_Real_Power_W)
+		send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", PV_Input_TotalCurrent_A)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", Grid_Phase1_RMSCurrent_Instant_A)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_Var", Grid_3Phase_Instant_Delivered_Reative_Power_Var)
 		Client_ModBus.close()
-		Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
-		Json_Body = [
-		{
-			"measurement" : "Grid_3Phase_DeliveredEnergy_LastReset_kWh",
-			"fields" : {
-				"value" : Grid_3Phase_DeliveredEnergy_LastReset_kWh
-			}
-		}
-		]
-		Client_InfluxDB.write_points(Json_Body)
-		Resultado = Client_InfluxDB.query('select value from Grid_3Phase_DeliveredEnergy_LastReset_kWh')
-		print(Resultado)
 		time.sleep(60)
 		
 		
@@ -92,3 +98,26 @@ def convert_input_register_value_in_real_value(Input_Register_Value, Scale_Facto
 	Função: Dado um número do tipo inteiro, e um fator de escala, essa função realiza a conversão deste número para valores de grandezas reais, como tensão em Volts, Corrente em Amperes, etc.
 	"""
 	return Input_Register_Value*Scale_Factor
+
+def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
+	"""
+	Recebe o nome da Measurement e o seu valor
+
+	Entradas:
+		Measurement_Name: Nome da Medição realizada a ser salva no banco de dados
+		Measurement_Value: Valor da Medição realizada a ser salva no banco de dados
+
+	Função: Elaborar um Json com o nome e valor da Measurement, e salvar os dados no InfluxDB
+	"""
+	Json_Body_Message =[
+		{
+			"measurement" : Measurement_Name,
+			"fields" : {
+					"value" : Measurement_Value,
+			}
+		}
+	]
+	if Client_InfluxDB.write_points(Json_Body_Message):
+		print("Dados salvos no banco de dados")
+	else:
+		print("Erro ao enviar os dados ao banco de dados")

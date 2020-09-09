@@ -35,8 +35,9 @@ def main():
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
 	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
 	Ts = 60
+	Initial_Time = 0
 	while True:
-		Initial_Time = time.clock()
+		print(time.clock())
 		Input_Registers = []
 		#Client_ModBus.debug(True)
 		try:
@@ -96,9 +97,10 @@ def main():
 		Client_ModBus.close()
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
-		print("Tempo de processamento: %f"%CPU_Process_Time)
+		print("Tempo de Processamento: %f"%(CPU_Process_Time))
 		time.sleep(Ts - CPU_Process_Time)
-		
+		print(time.clock())
+		Initial_Time = Final_Time
 		
 def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
     """

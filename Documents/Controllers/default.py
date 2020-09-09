@@ -28,8 +28,8 @@ def main():
 		e se esse endereço está sendo lido de maneira correta
 
 	"""
-	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38] # Endereço requisitado ao inversor
-	Inverter_Registers_Length =  [2,2,2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
+	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,33] # Endereço requisitado ao inversor
+	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
 	Grid_3Phase_DaylyEnergy_Today_kVArh = 0
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
@@ -63,6 +63,7 @@ def main():
 		Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts)
 		print("Valor INPUT PV 1 e 2: ")
 		print(Input_Registers[12])
+		PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[13][0], Scale_Factor =1)	
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)

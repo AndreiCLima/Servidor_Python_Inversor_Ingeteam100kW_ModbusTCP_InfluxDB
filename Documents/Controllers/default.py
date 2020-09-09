@@ -5,6 +5,7 @@ from influxdb import InfluxDBClient
 from Documents.Configurations.ModBusHost import HOST
 from Documents.Configurations.DataBaseConfigurations import DataBase, DataBaseHOST, DataBasePORT, UserName, Password 
 import time
+import datetime
 
 def main():
 	"""
@@ -32,6 +33,7 @@ def main():
 	Control_Flag = False
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
 	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
+	Ts = 60
 	while True:
 		Client_ModBus.open()
 		#Client_ModBus.debug(True)
@@ -55,6 +57,7 @@ def main():
 		Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
 		Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_in_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 		Grid_3Phase_Instant_Delivered_Reative_Power_Var = convert_input_register_value_in_real_value(Input_Registers[11][0], Scale_Factor = 10)
+		Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_Instant_Delivered_Reative_Power_Var, Ts):
 		#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
@@ -68,8 +71,9 @@ def main():
 		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
 		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_Var", Grid_3Phase_Instant_Delivered_Reative_Power_Var)
+		send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
 		Client_ModBus.close()
-		time.sleep(60)
+		time.sleep(Ts)
 		
 		
 def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
@@ -121,3 +125,13 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 		print("Dados salvos no banco de dados")
 	else:
 		print("Erro ao enviar os dados ao banco de dados")
+
+def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_Instant_Delivered_Reative_Power_Var, Ts):
+        '''Essa função calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos'''
+        hora_agora = datetime.now()                     # Horário atual
+        hora       = hora_agora.hour
+        minuto     = hora_agora.minute
+        
+        if hora == 0 and minuto == 0:
+                EKVArh = 0
+        EKVArh = EKVArh + Ts * Grid_3Phase_Instant_Delivered_Reative_Power_Var/3.6e6

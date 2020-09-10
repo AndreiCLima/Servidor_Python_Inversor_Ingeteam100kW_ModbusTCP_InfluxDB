@@ -25,8 +25,8 @@ def main():
 	Control_Flag: flag de controle, responsável por verificar qual endereço do registrador está sendo acessado no momento,
 		e se esse endereço está sendo lido de maneira correta
 	"""
-	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,33] # Endereço requisitado ao inversor
-	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
+	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,39,40,41,42,43,44,45,33] # Endereço requisitado ao inversor
+	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
 	Grid_3Phase_DaylyEnergy_Today_kVArh = 0
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
@@ -38,7 +38,9 @@ def main():
 		Input_Registers = []
 		#Client_ModBus.debug(True) 
 		try:
+			print("Antes do client_modbus.open()")
 			Client_ModBus.open()
+			print("Depois do client_modbus.open()")
 			for Address in range(len(Inverter_Registers_Address)):
 				if Inverter_Registers_Length[Address] == 2 and not(Control_Flag):
 					Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
@@ -47,6 +49,7 @@ def main():
 					Control_Flag = False
 				else:
 					Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
+			print("Depois do FOR dos endereços")
 			Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
 			Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
 			Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
@@ -60,15 +63,16 @@ def main():
 			Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 			Grid_3Phase_Instant_Delivered_Reative_Power_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
 			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts)
-                        for i in range(11,19): # Calcula as correntes nas strings
-                                Primeira_String, Segunda_String = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[i])
-                                Primeira_String                 = convert_input_register_value_to_real_value(Primeira_String, Scale_Factor = 0.1)
-                                Segunda_String                  = convert_input_register_value_to_real_value(Segunda_String, Scale_Factor = 0.1)
-                                PVDCInput_String_InputCurrent_Instant.append(Primeira_String)
-                                PVDCInput_String_InputCurrent_Instant.append(Segunda_String)
-			print("Valor INPUT PV 1 e 2: ")
-			print(Input_Registers[12])
-			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[19][0], Scale_Factor =1)
+			print(Input_Registers)
+			print("Antes do for das strings")
+			for i in range(14,22):
+				Primeira_String, Segunda_String = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[i][0])
+				Primeira_String                 = convert_input_register_value_to_real_value(Primeira_String, Scale_Factor = 0.1)
+				Segunda_String                  = convert_input_register_value_to_real_value(Segunda_String, Scale_Factor = 0.1)
+				PVDCInput_String_InputCurrent_Instant.append(Primeira_String)
+				PVDCInput_String_InputCurrent_Instant.append(Segunda_String)
+			print("Depois do for")
+			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[22][0], Scale_Factor =1)
 			#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
@@ -83,21 +87,25 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", Grid_3Phase_Instant_Delivered_Reative_Power_VAr)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
+			#for Strings in range(16):
+			#	print("PVDCInput_String"+"%d"+"_InputCurrent_Instant_A"%(Strings+1))
+			#	send_data_to_influx_db(Client_InfluxDB, ("PVDCInput_String"+"%d"+"_InputCurrent_Instant_A")%(Strings+1), PVDCInput_String_InputCurrent_Instant[Strings])
 			Client_ModBus.close()
 		except:
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", 0)
+			print("Except")
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", 0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Real_Power_W", 0)
-			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", 0)
+			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", 0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", 0.0)
 			Grid_3Phase_DaylyEnergy_Today_kVArh = 0
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
@@ -176,10 +184,7 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 			}
 		}
 	]
-	try:
-		Client_InfluxDB.write_points(Json_Body_Message)
-	except:
-		print("Erro ao enviar os dados ao banco de dados")
+	Client_InfluxDB.write_points(Json_Body_Message)
 
 @timeout(2)
 def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts):

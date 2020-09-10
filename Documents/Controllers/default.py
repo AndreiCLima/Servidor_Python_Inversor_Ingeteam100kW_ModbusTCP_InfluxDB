@@ -29,7 +29,6 @@ def main():
 	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
 	Grid_3Phase_DaylyEnergy_Today_kVArh = 0
-	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
 	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
 	Ts = 60
 	Initial_Time = time.clock()
@@ -38,9 +37,8 @@ def main():
 		Input_Registers = []
 		#Client_ModBus.debug(True) 
 		try:
-			print("Antes do client_modbus.open()")
+			Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
 			Client_ModBus.open()
-			print("Depois do client_modbus.open()")
 			for Address in range(len(Inverter_Registers_Address)):
 				if Inverter_Registers_Length[Address] == 2 and not(Control_Flag):
 					Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
@@ -49,46 +47,58 @@ def main():
 					Control_Flag = False
 				else:
 					Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-			print("Depois do FOR dos endereços")
 			Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
 			Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
 			Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
 			Grid_Phase2_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[3][0], Scale_Factor = 0.1)
 			Grid_Phase3_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[4][0], Scale_Factor = 0.1)
 			Grid_3Phase_Instant_Delivered_Aparent_Power_VA = convert_input_register_value_to_real_value(Input_Registers[5][0], Scale_Factor = 10)
-			Grid_3Phase_Instant_Delivered_Real_Power_W = convert_input_register_value_to_real_value(Input_Registers[6][0], Scale_Factor = 10)
+			Grid_3Phase_OutputActivePower_Instant_W = convert_input_register_value_to_real_value(Input_Registers[6][0], Scale_Factor = 10)
 			PV_Input_TotalCurrent_A = convert_input_register_value_to_real_value(Input_Registers[7][0], Scale_Factor = 0.01)
 			Grid_Phase1_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[8][0], Scale_Factor = 0.01)
 			Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
 			Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
-			Grid_3Phase_Instant_Delivered_Reative_Power_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
-			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts)
-			PVDCInput_String1_InputCurrent_Instant_A,  PVDCInput_String2_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[12][0])
-                        PVDCInput_String3_InputCurrent_Instant_A,  PVDCInput_String4_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[13][0])
-                        PVDCInput_String5_InputCurrent_Instant_A,  PVDCInput_String6_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[14][0])
-                        PVDCInput_String7_InputCurrent_Instant_A,  PVDCInput_String8_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[15][0])
-                        PVDCInput_String9_InputCurrent_Instant_A,  PVDCInput_String10_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[16][0])
-                        PVDCInput_String11_InputCurrent_Instant_A, PVDCInput_String12_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[17][0])
-                        PVDCInput_String13_InputCurrent_Instant_A, PVDCInput_String14_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[18][0])
-                        PVDCInput_String15_InputCurrent_Instant_A, PVDCInput_String16_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[19][0])
-			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[22][0], Scale_Factor =1)
-			#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
+			Grid_3Phase_OutputReactivePower_LastReset_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
+			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts)
+			PVDCInput_String1_InputCurrent_Instant_A,  PVDCInput_String2_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[12][0])		
+			PVDCInput_String3_InputCurrent_Instant_A,  PVDCInput_String4_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[13][0])
+			PVDCInput_String5_InputCurrent_Instant_A,  PVDCInput_String6_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[14][0])
+			PVDCInput_String7_InputCurrent_Instant_A,  PVDCInput_String8_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[15][0])
+			PVDCInput_String9_InputCurrent_Instant_A,  PVDCInput_String10_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[16][0])
+			PVDCInput_String11_InputCurrent_Instant_A, PVDCInput_String12_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[17][0])
+			PVDCInput_String13_InputCurrent_Instant_A, PVDCInput_String14_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[18][0])
+			PVDCInput_String15_InputCurrent_Instant_A, PVDCInput_String16_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[19][0])
+			PV_Input_Total_InputVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[20][0], Scale_Factor =1)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", Grid_Phase1_RMSVoltage_Instant_V)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", Grid_Phase2_RMSVoltage_Instant_V)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", Grid_Phase3_RMSVoltage_Instant_V)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", Grid_3Phase_Instant_Delivered_Aparent_Power_VA)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Real_Power_W", Grid_3Phase_Instant_Delivered_Real_Power_W)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputActivePower_Instant_W", Grid_3Phase_OutputActivePower_Instant_W)
 			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", PV_Input_TotalCurrent_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", Grid_Phase1_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", Grid_3Phase_Instant_Delivered_Reative_Power_VAr)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", Grid_3Phase_OutputReactivePower_LastReset_VAr)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
-			#for Strings in range(16):
-			#	print("PVDCInput_String"+"%d"+"_InputCurrent_Instant_A"%(Strings+1))
-			#	send_data_to_influx_db(Client_InfluxDB, ("PVDCInput_String"+"%d"+"_InputCurrent_Instant_A")%(Strings+1), PVDCInput_String_InputCurrent_Instant[Strings])
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A",PVDCInput_String1_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A",PVDCInput_String2_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A",PVDCInput_String3_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String4_InputCurrent_Instant_A",PVDCInput_String4_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String5_InputCurrent_Instant_A",PVDCInput_String5_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String6_InputCurrent_Instant_A",PVDCInput_String6_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String7_InputCurrent_Instant_A",PVDCInput_String7_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String8_InputCurrent_Instant_A",PVDCInput_String8_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String9_InputCurrent_Instant_A",PVDCInput_String9_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String10_InputCurrent_Instant_A",PVDCInput_String10_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String11_InputCurrent_Instant_A",PVDCInput_String11_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String12_InputCurrent_Instant_A",PVDCInput_String12_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String13_InputCurrent_Instant_A",PVDCInput_String13_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String14_InputCurrent_Instant_A",PVDCInput_String14_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String15_InputCurrent_Instant_A",PVDCInput_String15_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String16_InputCurrent_Instant_A",PVDCInput_String16_InputCurrent_Instant_A)
+			send_data_to_influx_db(Client_InfluxDB, "PV_Input_Total_InputVoltage_Vdc", PV_Input_Total_InputVoltage_Vdc)
 			Client_ModBus.close()
 		except:
 			print("Except")
@@ -97,14 +107,31 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", 0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Real_Power_W", 0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputActivePower_Instant_W", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", 0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String4_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String5_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String6_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String7_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String8_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String9_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String10_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String11_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String12_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String13_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String14_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String15_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String16_InputCurrent_Instant_A", 0.0)
+			send_data_to_influx_db(Client_InfluxDB, "PV_Input_Total_InputVoltage_Vdc", 0.0)
 			Grid_3Phase_DaylyEnergy_Today_kVArh = 0
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
@@ -130,8 +157,7 @@ def timeout(seconds):
 		return wrapper
 	return decorator
 
-
-@timeout(2)		
+		
 def convert_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
     """
     Recebe os parâmetro lidos do registrador do inversor
@@ -144,18 +170,20 @@ def convert_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Ui
     """
     return Uint_32_Input_Registers_Most_Significant_Bits * 65536 + Uint_32_Input_Registers_Less_Significant_Bits
 
-@timeout(2)
 def convert_parameters_uint_16_to_8bits_8bits(Uint_16_Input_Registers):
         '''Essa função separa os dados de corrente das String. O registrador armazena os dados de corrente de duas Strings em um único registrador Uint16.
         Essa função converte o valor inteiro retornado pelo protocolo em valor binário, sepera em dois grupos de 8 bits, converte novamente para inteiro e devolve a função principal'''
-        Convert_Decimal_To_Binario = bin(Uint_16_Input_Registers) # Converte um valor em decimal para binário
-        Length_Date                = len(Convert_Decimal_To_Binario) - 8                                
-        Primeira_String            = int(Convert_Decimal_To_Binario[2:Length_Date],2) # Converte para inteiro
-        Segunda_String             = int(Convert_Decimal_To_Binario[Length_Date:len(a)],2)
-        return convert_input_register_value_to_real_value(Primeira_String, 0.1), convert_input_register_value_to_real_value(Segunda_String, 0.1)  
+        Convert_Decimal_To_Binary = bin(Uint_16_Input_Registers) # Converte um valor em decimal para binário
+        if(len(Convert_Decimal_To_Binary) > 10):
+        	Length_Date                = len(Convert_Decimal_To_Binary) - 8                                
+        	First_String            = int(Convert_Decimal_To_Binary[2:Length_Date],2) # Converte para inteiro
+        	Second_String             = int(Convert_Decimal_To_Binary[Length_Date:len(Convert_Decimal_To_Binary)],2)
+        else:
+        	First_String = 0
+        	Second_String = int(Convert_Decimal_To_Binary,2)
+        return convert_input_register_value_to_real_value(First_String, 0.1), convert_input_register_value_to_real_value(Second_String, 0.1)  
         
 
-@timeout(2)
 def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Factor):
 	"""
 	Recebe o parâmetro lido pelo inversor, já convertido de uint32 (se necessário)
@@ -179,19 +207,18 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 		{
 			"measurement" : Measurement_Name,
 			"fields" : {
-					"value" : Measurement_Value,
+					"value" : float(Measurement_Value),
 			}
 		}
 	]
 	Client_InfluxDB.write_points(Json_Body_Message)
 
-@timeout(2)
-def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts):
+def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts):
         """
         Calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos
         Entradas: 
         	Grid_3Phase_DaylyEnergy_Today_kVArh: Valor da Energia reativa relativo à iteração anterior
-        	Grid_3Phase_Instant_Delivered_Reative_Power_VAr: Valor da Potência Reativa Instantânea
+        	Grid_3Phase_OutputReactivePower_LastReset_VAr: Valor da Potência Reativa Instantânea
         	Ts: Período de amostragem do Sinal
         Função: Retornar ao programa principal o valor da energia da rede, em KVArh
         """
@@ -201,4 +228,4 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Gri
         
         if Hour == 0 and Minute == 0:
             Grid_3Phase_DaylyEnergy_Today_kVArh = 0
-        return Grid_3Phase_DaylyEnergy_Today_kVArh + Ts * Grid_3Phase_Instant_Delivered_Reative_Power_VAr/3.6e6
+        return Grid_3Phase_DaylyEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6

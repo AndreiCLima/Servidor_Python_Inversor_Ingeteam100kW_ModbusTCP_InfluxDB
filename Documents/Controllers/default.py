@@ -5,6 +5,8 @@ from influxdb import InfluxDBClient
 from Documents.Configurations.ModBusHost import HOST
 from Documents.Configurations.DataBaseConfigurations import DataBase, DataBaseHOST, DataBasePORT, UserName, Password 
 from datetime import datetime
+from multiprocessing import TimeoutError
+from multiprocessing.pool import ThreadPool
 import time
 
 
@@ -80,6 +82,7 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", Grid_3Phase_Instant_Delivered_Reative_Power_VAr)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
+			Client_ModBus.close()
 		except:
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", 0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", 0)
@@ -95,7 +98,6 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Reative_Power_VAr", 0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", 0)
 			Grid_3Phase_DaylyEnergy_Today_kVArh = 0
-		Client_ModBus.close()
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
 		print("Tempo de Processamento: %f"%(CPU_Process_Time))
@@ -103,7 +105,7 @@ def main():
 		print(time.clock())
 		Initial_Time = Final_Time
 
-		
+@timeout(5)		
 def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
     """
     Recebe os parâmetro lidos do registrador do inversor
@@ -118,7 +120,7 @@ def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, 
     """
     return Uint_32_Input_Registers_Most_Significant_Bits * 65536 + Uint_32_Input_Registers_Less_Significant_Bits
 
-
+@timeout(5)
 def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Factor):
 	"""
 	Recebe o parâmetro lido pelo inversor, já convertido de uint32 (se necessário)
@@ -131,6 +133,7 @@ def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Facto
 	"""
 	return Input_Register_Value*Scale_Factor
 
+@timeout(15)
 def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	"""
 	Recebe o nome da Measurement e o seu valor
@@ -154,6 +157,7 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	except:
 		print("Erro ao enviar os dados ao banco de dados")
 
+@timeout(5)
 def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts):
         '''Essa função calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos'''
         hora_agora = datetime.now()                     # Horário atual
@@ -163,3 +167,15 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Gri
         if hora == 0 and minuto == 0:
             Grid_3Phase_DaylyEnergy_Today_kVArh = 0
         return Grid_3Phase_DaylyEnergy_Today_kVArh + Ts * Grid_3Phase_Instant_Delivered_Reative_Power_VAr/3.6e6
+
+def timeout(seconds):
+    def decorator(function):
+        def wrapper(*args, **kwargs):
+            pool = ThreadPool(processes=1)
+            result = pool.apply_async(function, args=args, kwds=kwargs)
+            try:
+                return result.get(timeout=seconds)
+            except TimeoutError as error:
+                return error
+        return wrapper
+    return decorator

@@ -30,8 +30,8 @@ def main():
 		e se esse endereço está sendo lido de maneira correta
 
 	"""
-	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,33] # Endereço requisitado ao inversor
-	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
+	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,44,45,46,47,48,49,50,51,33] # Endereço requisitado ao inversor
+	Inverter_Registers_Length  = [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
 	Grid_3Phase_DaylyEnergy_Today_kVArh = 0
 	Client_ModBus = ModbusClient(host = HOST, port = 502, auto_open = True, auto_close = True)
@@ -41,6 +41,7 @@ def main():
 	while True:
 		print(time.clock())
 		Input_Registers = []
+		PVDCInput_String_InputCurrent_Instant = []
 		#Client_ModBus.debug(True) 
 		try:
 			Client_ModBus.open()
@@ -64,10 +65,17 @@ def main():
 			Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
 			Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 			Grid_3Phase_Instant_Delivered_Reative_Power_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
+			for i in range(11,19): # Calcula as correntes nas strings
+                                Primeira_String, Segunda_String = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[i])
+                                Primeira_String                 = convert_input_register_value_to_real_value(Primeira_String, Scale_Factor = 0.1)
+                                Segunda_String                  = convert_input_register_value_to_real_value(Segunda_String, Scale_Factor = 0.1)
+                                PVDCInput_String_InputCurrent_Instant.append(Primeira_String)
+                                PVDCInput_String_InputCurrent_Instant.append(Segunda_String)
+                                
 			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts)
 			print("Valor INPUT PV 1 e 2: ")
 			print(Input_Registers[12])
-			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[13][0], Scale_Factor =1)
+			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[19][0], Scale_Factor =1)
 			#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
@@ -119,6 +127,16 @@ def convert_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Ui
 
     """
     return Uint_32_Input_Registers_Most_Significant_Bits * 65536 + Uint_32_Input_Registers_Less_Significant_Bits
+@timeout(2)
+def convert_parameters_uint_16_to_8bits_8bits(Uint_16_Input_Registers):
+        '''Essa função separa os dados de corrente das String. O registrador armazena os dados de corrente de duas Strings em um único registrador Uint16.
+        Essa função converte o valor inteiro retornado pelo protocolo em valor binário, sepera em dois grupos de 8 bits, converte novamente para inteiro e devolve a função principal'''
+        Convert_Decimal_To_Binario = bin(Uint_16_Input_Registers) # Converte um valor em decimal para binário
+        Length_Date                = len(Convert_Decimal_To_Binario) - 8                                
+        Primeira_String            = int(Convert_Decimal_To_Binario[2:Length_Date],2) # Converte
+        Segunda_String             = int(Convert_Decimal_To_Binario[Length_Date:len(a)],2)
+        return Primeira_String, Segunda_String  
+        
 
 @timeout(2)
 def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Factor):

@@ -63,15 +63,14 @@ def main():
 			Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 			Grid_3Phase_Instant_Delivered_Reative_Power_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
 			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts)
-			print(Input_Registers)
-			print("Antes do for das strings")
-			for i in range(14,22):
-				Primeira_String, Segunda_String = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[i][0])
-				Primeira_String                 = convert_input_register_value_to_real_value(Primeira_String, Scale_Factor = 0.1)
-				Segunda_String                  = convert_input_register_value_to_real_value(Segunda_String, Scale_Factor = 0.1)
-				PVDCInput_String_InputCurrent_Instant.append(Primeira_String)
-				PVDCInput_String_InputCurrent_Instant.append(Segunda_String)
-			print("Depois do for")
+			PVDCInput_String1_InputCurrent_Instant_A,  PVDCInput_String2_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[12][0])
+                        PVDCInput_String3_InputCurrent_Instant_A,  PVDCInput_String4_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[13][0])
+                        PVDCInput_String5_InputCurrent_Instant_A,  PVDCInput_String6_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[14][0])
+                        PVDCInput_String7_InputCurrent_Instant_A,  PVDCInput_String8_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[15][0])
+                        PVDCInput_String9_InputCurrent_Instant_A,  PVDCInput_String10_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[16][0])
+                        PVDCInput_String11_InputCurrent_Instant_A, PVDCInput_String12_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[17][0])
+                        PVDCInput_String13_InputCurrent_Instant_A, PVDCInput_String14_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[18][0])
+                        PVDCInput_String15_InputCurrent_Instant_A, PVDCInput_String16_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[19][0])
 			PV_Input_TotalVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[22][0], Scale_Factor =1)
 			#print(Grid_3Phase_DeliveredEnergy_LastReset_kWh)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
@@ -153,7 +152,7 @@ def convert_parameters_uint_16_to_8bits_8bits(Uint_16_Input_Registers):
         Length_Date                = len(Convert_Decimal_To_Binario) - 8                                
         Primeira_String            = int(Convert_Decimal_To_Binario[2:Length_Date],2) # Converte para inteiro
         Segunda_String             = int(Convert_Decimal_To_Binario[Length_Date:len(a)],2)
-        return Primeira_String, Segunda_String  
+        return convert_input_register_value_to_real_value(Primeira_String, 0.1), convert_input_register_value_to_real_value(Segunda_String, 0.1)  
         
 
 @timeout(2)

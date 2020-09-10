@@ -52,8 +52,8 @@ def main():
 					Control_Flag = False
 				else:
 					Input_Registers.append(Client_ModBus.read_input_registers(Inverter_Registers_Address[Address],Inverter_Registers_Length[Address]))
-			Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_to_real_value(converter_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
-			Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_to_real_value(converter_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
+			Grid_3Phase_DeliveredEnergy_LastReset_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[0][0],Input_Registers[0][1]), Scale_Factor = 0.01)
+			Grid_3Phase_DaylyEnergy_Today_kWh = convert_input_register_value_to_real_value(convert_parameters_uint_32(Input_Registers[1][0], Input_Registers[1][1]), Scale_Factor = 0.01)
 			Grid_Phase1_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[2][0], Scale_Factor = 0.1)
 			Grid_Phase2_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[3][0], Scale_Factor = 0.1)
 			Grid_Phase3_RMSVoltage_Instant_V = convert_input_register_value_to_real_value(Input_Registers[4][0], Scale_Factor = 0.1)
@@ -105,8 +105,8 @@ def main():
 		print(time.clock())
 		Initial_Time = Final_Time
 
-@timeout(5)		
-def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
+@timeout(2)		
+def convert_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
     """
     Recebe os parâmetro lidos do registrador do inversor
 	
@@ -120,7 +120,7 @@ def converter_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, 
     """
     return Uint_32_Input_Registers_Most_Significant_Bits * 65536 + Uint_32_Input_Registers_Less_Significant_Bits
 
-@timeout(5)
+@timeout(2)
 def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Factor):
 	"""
 	Recebe o parâmetro lido pelo inversor, já convertido de uint32 (se necessário)
@@ -133,7 +133,7 @@ def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Facto
 	"""
 	return Input_Register_Value*Scale_Factor
 
-@timeout(15)
+@timeout(5)
 def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	"""
 	Recebe o nome da Measurement e o seu valor
@@ -157,18 +157,34 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	except:
 		print("Erro ao enviar os dados ao banco de dados")
 
-@timeout(5)
+@timeout(2)
 def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_Instant_Delivered_Reative_Power_VAr, Ts):
-        '''Essa função calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos'''
-        hora_agora = datetime.now()                     # Horário atual
-        hora       = hora_agora.hour
-        minuto     = hora_agora.minute
+        """
+        Calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos
+
+        Entradas: 
+        	Grid_3Phase_DaylyEnergy_Today_kVArh: Valor da Energia reativa relativo à iteração anterior
+        	Grid_3Phase_Instant_Delivered_Reative_Power_VAr: Valor da Potência Reativa Instantânea
+        	Ts: Período de amostragem do Sinal
+
+        Função: Retornar ao programa principal o valor da energia da rede, em KVArh
+
+        """
+        Real_Time = datetime.now()                     # Horário atual
+        Hour       = Real_Time.hour
+        Minute     = Real_Time.minute
         
-        if hora == 0 and minuto == 0:
+        if Hour == 0 and Minute == 0:
             Grid_3Phase_DaylyEnergy_Today_kVArh = 0
         return Grid_3Phase_DaylyEnergy_Today_kVArh + Ts * Grid_3Phase_Instant_Delivered_Reative_Power_VAr/3.6e6
 
 def timeout(seconds):
+	"""
+	Responsável por gerar o timeout das funções
+
+	Entradas:
+		seconds: Valor em segundos do Timeout desejado
+	"""
     def decorator(function):
         def wrapper(*args, **kwargs):
             pool = ThreadPool(processes=1)

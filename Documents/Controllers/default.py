@@ -20,16 +20,45 @@ def main():
 	Client_ModBus (Objeto responsável pela comunicação ModBus TCP/IP).
 	Client_InfluxDB (Objeto responsável pela comunicação com o Banco de Dados)
 	Variáveis:
-	Inverter_Register_Addres: Endereço do registrador requisitado ao inversor
-	Inverter_Register_Length: Dimensão do Registrador a ser lido, considerando-se registradore de 16 bits.
-	Control_Flag: flag de controle, responsável por verificar qual endereço do registrador está sendo acessado no momento,
-		e se esse endereço está sendo lido de maneira correta
+		
+		Terminal de Potência | Especificação do Terminal | Tipo de Variável | Momento de medição | Unidade |              Nome da Variável
+			  Grid           |         3Phase            | DeliveredEnergy  |     LastReset      |    kWh  | Grid_3Phase_DeliveredEnergy_LastReset_kWh
+			  Grid           |         3Phase            |    OUT
+			  Grid
+			  Grid
+			  Grid
+			  Grid
+			  Grid
+		    PV_Input
+		      Grid
+		      Grid
+		      Grid
+		      Grid
+		      Grid
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+		   PVDCInput
+
+
 	"""
 	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,39,40,41,42,43,44,45,33] # Endereço requisitado ao inversor
 	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
-	Grid_3Phase_DaylyEnergy_Today_kVArh = 0
-	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,'root','root',DataBase)
+	Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
+	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,UserName,Password,DataBase)
 	Ts = 60
 	Initial_Time = time.clock()
 	while True:
@@ -59,7 +88,7 @@ def main():
 			Grid_Phase2_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[9][0], Scale_Factor = 0.01)
 			Grid_Phase3_RMSCurrent_Instant_A = convert_input_register_value_to_real_value(Input_Registers[10][0], Scale_Factor = 0.01)
 			Grid_3Phase_OutputReactivePower_LastReset_VAr = convert_input_register_value_to_real_value(Input_Registers[11][0], Scale_Factor = 10)
-			Grid_3Phase_DaylyEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts)
+			Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts)
 			PVDCInput_String1_InputCurrent_Instant_A,  PVDCInput_String2_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[12][0])		
 			PVDCInput_String3_InputCurrent_Instant_A,  PVDCInput_String4_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[13][0])
 			PVDCInput_String5_InputCurrent_Instant_A,  PVDCInput_String6_InputCurrent_Instant_A  = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[14][0])
@@ -81,7 +110,7 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", Grid_3Phase_OutputReactivePower_LastReset_VAr)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", Grid_3Phase_DaylyEnergy_Today_kVArh)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyReactiveEnergy_Today_kVArh", Grid_3Phase_DaylyReactiveEnergy_Today_kVArh)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A",PVDCInput_String1_InputCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A",PVDCInput_String2_InputCurrent_Instant_A)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A",PVDCInput_String3_InputCurrent_Instant_A)
@@ -114,7 +143,7 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kVArh", 0.0)
+			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyReactiveEnergy_Today_kVArh", 0.0)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A", 0.0)
@@ -132,7 +161,7 @@ def main():
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String15_InputCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String16_InputCurrent_Instant_A", 0.0)
 			send_data_to_influx_db(Client_InfluxDB, "PV_Input_Total_InputVoltage_Vdc", 0.0)
-			Grid_3Phase_DaylyEnergy_Today_kVArh = 0
+			Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
 		print("Tempo de Processamento: %f"%(CPU_Process_Time))
@@ -213,11 +242,11 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	]
 	Client_InfluxDB.write_points(Json_Body_Message)
 
-def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts):
+def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts):
         """
         Calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos
         Entradas: 
-        	Grid_3Phase_DaylyEnergy_Today_kVArh: Valor da Energia reativa relativo à iteração anterior
+        	Grid_3Phase_DaylyReactiveEnergy_Today_kVArh: Valor da Energia reativa relativo à iteração anterior
         	Grid_3Phase_OutputReactivePower_LastReset_VAr: Valor da Potência Reativa Instantânea
         	Ts: Período de amostragem do Sinal
         Função: Retornar ao programa principal o valor da energia da rede, em KVArh
@@ -227,5 +256,5 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyEnergy_Today_kVArh,Gri
         Minute     = Real_Time.minute
         
         if Hour == 0 and Minute == 0:
-            Grid_3Phase_DaylyEnergy_Today_kVArh = 0
-        return Grid_3Phase_DaylyEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6
+            Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
+        return Grid_3Phase_DaylyReactiveEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6

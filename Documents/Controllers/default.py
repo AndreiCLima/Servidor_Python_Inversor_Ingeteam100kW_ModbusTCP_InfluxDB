@@ -21,37 +21,37 @@ def main():
 	Client_InfluxDB (Objeto responsável pela comunicação com o Banco de Dados)
 	Variáveis:
 		
-		Terminal de Potência | Especificação do Terminal | Tipo de Variável | Momento de medição | Unidade |              Nome da Variável
-			  Grid           |         3Phase            | DeliveredEnergy  |     LastReset      |    kWh  | Grid_3Phase_DeliveredEnergy_LastReset_kWh
-			  Grid           |         3Phase            |    OUT
-			  Grid
-			  Grid
-			  Grid
-			  Grid
-			  Grid
-		    PV_Input
-		      Grid
-		      Grid
-		      Grid
-		      Grid
-		      Grid
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-		   PVDCInput
-
+		Terminal de Potência | Especificação do Terminal |     Tipo de Variável    | Momento de medição | Unidade |              Nome da Variável
+			  Grid           |         3Phase            |      DeliveredEnergy    |     LastReset      |   kWh   | Grid_3Phase_DeliveredEnergy_LastReset_kWh
+			  Grid           |         3Phase            |        DaylyEnergy      |       Today        |   kWh   | Grid_3Phase_DaylyEnergy_Today_kWh
+			  Grid           |         Phase1            |        RMSVoltage       |      Instant       |    V    | Grid_Phase1_RMSVoltage_Instant_V 
+			  Grid           |         Phase2            |        RMSVoltage       |      Instant       |    V    | Grid_Phase2_RMSVoltage_Instant_V
+			  Grid           |         Phase3            |        RMSVoltage       |      Instant       |    V    | Grid_Phase3_RMSVoltage_Instant_V
+			  Grid           |         3Phase            | Delivered_Aparent_Power |      Instant       |    VA   | Grid_3Phase_Delivered_Aparent_Power_Instant_VA
+			  Grid           |         3Phase            |    OutputActivePower    |      Instant       |    W    | Grid_3Phase_OutputActivePower_Instant_W
+		    PV_Input         |         Total             |       InputCurrent      |      Instant       |    A    | PV_Input_Total_InputCurrent_Instant_A
+		      Grid           |         Phase1            |        RMSCurrent       |      Instant       |    A    | Grid_Phase1_RMSCurrent_Instant_A
+		      Grid           |         Phase2            |        RMSCurrent       |      Instant       |    A    | Grid_Phase2_RMSCurrent_Instant_A
+		      Grid           |         Phase3            |        RMSCurrent       |      Instant       |    A    | Grid_Phase3_RMSCurrent_Instant_A
+		      Grid           |         3Phase            |    OutputReactiveower   |     LastReset      |   VAr   | Grid_3Phase_OutputReactivePower_LastReset_VAr
+		      Grid           |         3Phase            |    DaylyReactiveEnergy  |       Today        |  kVArh  | Grid_3Phase_DaylyReactiveEnergy_Today_kVArh
+		   PVDCInput         |         String1           |       InputCurrent      |      Instant       |    A    | PVDCInput_String1_InputCurrent_Instant_A
+		   PVDCInput         |         String2           |       InputCurrent      |      Instant       |    A    | PVDCInput_String2_InputCurrent_Instant_A
+		   PVDCInput         |         String3           |       InputCurrent      |      Instant       |    A    | PVDCInput_String3_InputCurrent_Instant_A
+		   PVDCInput         |         String4           |       InputCurrent      |      Instant       |    A    | PVDCInput_String4_InputCurrent_Instant_A
+		   PVDCInput         |         String5           |       InputCurrent      |      Instant       |    A    | PVDCInput_String5_InputCurrent_Instant_A
+		   PVDCInput         |         String6           |       InputCurrent      |      Instant       |    A    | PVDCInput_String6_InputCurrent_Instant_A
+		   PVDCInput         |         String7           |       InputCurrent      |      Instant       |    A    | PVDCInput_String7_InputCurrent_Instant_A
+		   PVDCInput         |         String8           |       InputCurrent      |      Instant       |    A    | PVDCInput_String8_InputCurrent_Instant_A
+		   PVDCInput         |         String9           |       InputCurrent      |      Instant       |    A    | PVDCInput_String9_InputCurrent_Instant_A
+		   PVDCInput         |         String10          |       InputCurrent      |      Instant       |    A    | PVDCInput_String10_InputCurrent_Instant_A
+		   PVDCInput         |         String11          |       InputCurrent      |      Instant       |    A    | PVDCInput_String11_InputCurrent_Instant_A
+		   PVDCInput         |         String12          |       InputCurrent      |      Instant       |    A    | PVDCInput_String12_InputCurrent_Instant_A
+		   PVDCInput         |         String13          |       InputCurrent      |      Instant       |    A    | PVDCInput_String13_InputCurrent_Instant_A
+		   PVDCInput         |         String14          |       InputCurrent      |      Instant       |    A    | PVDCInput_String14_InputCurrent_Instant_A
+		   PVDCInput         |         String15          |       InputCurrent      |      Instant       |    A    | PVDCInput_String15_InputCurrent_Instant_A
+		   PVDCInput         |         String16          |       InputCurrent      |      Instant       |    A    | PVDCInput_String16_InputCurrent_Instant_A
+           PV_Input          |          Total            |       InputVoltage      |      Instant       |   Vdc   | PV_Input_Total_InputVoltage_Instant_Vdc
 
 	"""
 	Inverter_Registers_Address = [6,7,12,13,24,25,26,28,29,32,21,22,23,30,38,39,40,41,42,43,44,45,33] # Endereço requisitado ao inversor

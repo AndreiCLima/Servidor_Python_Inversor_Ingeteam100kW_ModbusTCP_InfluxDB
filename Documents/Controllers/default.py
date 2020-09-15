@@ -1,12 +1,12 @@
 # Programa Principal, onde será rodado o servidor
 # Importações:
 from pyModbusTCP.client import ModbusClient
-from influxdb import InfluxDBClient
 from Documents.Configurations.ModBusHost import HOST
-from Documents.Configurations.DataBaseConfigurations import DataBase, DataBaseHOST, DataBasePORT, UserName, Password 
+from Documents.Configurations.Topics import Topics 
 from datetime import datetime
 from multiprocessing import TimeoutError
 from multiprocessing.pool import ThreadPool
+import paho.mqtt.client as mqtt
 import time
 
 
@@ -18,7 +18,7 @@ def main():
 	entre o inversor de frequência, e salva os dados no InfluxDB.
 	Objetos:
 	Client_ModBus (Objeto responsável pela comunicação ModBus TCP/IP).
-	Client_InfluxDB (Objeto responsável pela comunicação com o Banco de Dados)
+	Client_MQTT (Objeto responsável pela comunicação com o Banco de Dados na rede externa, no CPD)
 	Variáveis:
 		
 		Terminal de Potência | Especificação do Terminal |     Tipo de Variável    | Momento de medição | Unidade |              Nome da Variável
@@ -58,11 +58,15 @@ def main():
 	Inverter_Registers_Length =  [2,2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Dimensão do registrador
 	Control_Flag = False
 	Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
-	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,UserName,Password,DataBase)
 	Ts = 60
 	Initial_Time = time.clock()
+	Client_MQTT = mqtt.Client("IngeTeam 100kW")
+	Client_MQTT.on_connect = on_connect
+	Client_MQTT.on_message = on_message
+	Client_MQTT.connect("mqtt.eclipse.org",1883,60)
 	while True:
 		print(time.clock())
+		Client_MQTT.loop_start()
 		Input_Registers = []
 		#Client_ModBus.debug(True) 
 		try:
@@ -98,69 +102,41 @@ def main():
 			PVDCInput_String13_InputCurrent_Instant_A, PVDCInput_String14_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[18][0])
 			PVDCInput_String15_InputCurrent_Instant_A, PVDCInput_String16_InputCurrent_Instant_A = convert_parameters_uint_16_to_8bits_8bits(Input_Registers[19][0])
 			PV_Input_Total_InputVoltage_Vdc = convert_input_register_value_to_real_value(Input_Registers[20][0], Scale_Factor =1)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", Grid_3Phase_DeliveredEnergy_LastReset_kWh)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", Grid_3Phase_DaylyEnergy_Today_kWh)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", Grid_Phase1_RMSVoltage_Instant_V)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", Grid_Phase2_RMSVoltage_Instant_V)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", Grid_Phase3_RMSVoltage_Instant_V)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", Grid_3Phase_Instant_Delivered_Aparent_Power_VA)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputActivePower_Instant_W", Grid_3Phase_OutputActivePower_Instant_W)
-			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", PV_Input_TotalCurrent_A)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", Grid_Phase1_RMSCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", Grid_Phase2_RMSCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", Grid_Phase3_RMSCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", Grid_3Phase_OutputReactivePower_LastReset_VAr)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyReactiveEnergy_Today_kVArh", Grid_3Phase_DaylyReactiveEnergy_Today_kVArh)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A",PVDCInput_String1_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A",PVDCInput_String2_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A",PVDCInput_String3_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String4_InputCurrent_Instant_A",PVDCInput_String4_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String5_InputCurrent_Instant_A",PVDCInput_String5_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String6_InputCurrent_Instant_A",PVDCInput_String6_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String7_InputCurrent_Instant_A",PVDCInput_String7_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String8_InputCurrent_Instant_A",PVDCInput_String8_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String9_InputCurrent_Instant_A",PVDCInput_String9_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String10_InputCurrent_Instant_A",PVDCInput_String10_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String11_InputCurrent_Instant_A",PVDCInput_String11_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String12_InputCurrent_Instant_A",PVDCInput_String12_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String13_InputCurrent_Instant_A",PVDCInput_String13_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String14_InputCurrent_Instant_A",PVDCInput_String14_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String15_InputCurrent_Instant_A",PVDCInput_String15_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String16_InputCurrent_Instant_A",PVDCInput_String16_InputCurrent_Instant_A)
-			send_data_to_influx_db(Client_InfluxDB, "PV_Input_Total_InputVoltage_Vdc", PV_Input_Total_InputVoltage_Vdc)
+			mqtt_publish(Client_MQTT, Topics[0], Grid_3Phase_DeliveredEnergy_LastReset_kWh)
+			mqtt_publish(Client_MQTT, Topics[1], Grid_3Phase_DaylyEnergy_Today_kWh)
+			mqtt_publish(Client_MQTT, Topics[2], Grid_Phase1_RMSVoltage_Instant_V)
+			mqtt_publish(Client_MQTT, Topics[3], Grid_Phase2_RMSVoltage_Instant_V)
+			mqtt_publish(Client_MQTT, Topics[4], Grid_Phase3_RMSVoltage_Instant_V)
+			mqtt_publish(Client_MQTT, Topics[5], Grid_3Phase_Instant_Delivered_Aparent_Power_VA)
+			mqtt_publish(Client_MQTT, Topics[6], Grid_3Phase_OutputActivePower_Instant_W)
+			mqtt_publish(Client_MQTT, Topics[7], PV_Input_TotalCurrent_A)
+			mqtt_publish(Client_MQTT, Topics[8], Grid_Phase1_RMSCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[9], Grid_Phase2_RMSCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[10], Grid_Phase3_RMSCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[11], Grid_3Phase_OutputReactivePower_LastReset_VAr)
+			mqtt_publish(Client_MQTT, Topics[12], Grid_3Phase_DaylyReactiveEnergy_Today_kVArh)
+			mqtt_publish(Client_MQTT, Topics[13], PVDCInput_String1_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[14], PVDCInput_String2_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[15], PVDCInput_String3_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[16], PVDCInput_String4_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[17], PVDCInput_String5_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[18], PVDCInput_String6_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[19], PVDCInput_String7_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[20], PVDCInput_String8_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[21], PVDCInput_String9_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[22], PVDCInput_String10_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[23], PVDCInput_String11_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[24], PVDCInput_String12_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[25], PVDCInput_String13_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[26], PVDCInput_String14_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[27], PVDCInput_String15_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[28], PVDCInput_String16_InputCurrent_Instant_A)
+			mqtt_publish(Client_MQTT, Topics[29], PV_Input_Total_InputVoltage_Vdc)
 			Client_ModBus.close()
 		except:
 			print("Except")
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DeliveredEnergy_LastReset_kWh", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyEnergy_Today_kWh", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSVoltage_Instant_V", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSVoltage_Instant_V", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSVoltage_Instant_V", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_Instant_Delivered_Aparent_Power_VA", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputActivePower_Instant_W", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"PV_Input_TotalCurrent_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase1_RMSCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase2_RMSCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_Phase3_RMSCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_OutputReactivePower_LastReset_VAr", 0.0)
-			send_data_to_influx_db(Client_InfluxDB,"Grid_3Phase_DaylyReactiveEnergy_Today_kVArh", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String1_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String2_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String3_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String4_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String5_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String6_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String7_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String8_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String9_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String10_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String11_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String12_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String13_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String14_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String15_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PVDCInput_String16_InputCurrent_Instant_A", 0.0)
-			send_data_to_influx_db(Client_InfluxDB, "PV_Input_Total_InputVoltage_Vdc", 0.0)
+			for topic in range(len(Topics)):
+				mqtt_publish(Client_MQTT, Topics[topic], 0)
 			Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
 		Final_Time = time.clock()
 		CPU_Process_Time = Final_Time - Initial_Time
@@ -223,25 +199,6 @@ def convert_input_register_value_to_real_value(Input_Register_Value, Scale_Facto
 	"""
 	return Input_Register_Value*Scale_Factor
 
-@timeout(5)
-def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
-	"""
-	Recebe o nome da Measurement e o seu valor
-	Entradas:
-		Measurement_Name: Nome da Medição realizada a ser salva no banco de dados
-		Measurement_Value: Valor da Medição realizada a ser salva no banco de dados
-	Função: Elaborar um Json com o nome e valor da Measurement, e salvar os dados no InfluxDB
-	"""
-	Json_Body_Message =[
-		{
-			"measurement" : Measurement_Name,
-			"fields" : {
-					"value" : float(Measurement_Value),
-			}
-		}
-	]
-	Client_InfluxDB.write_points(Json_Body_Message)
-
 def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_kVArh,Grid_3Phase_OutputReactivePower_LastReset_VAr, Ts):
         """
         Calcula a energia reativa em KVArh durante um dia, utilizando Ts = 60 segundos
@@ -258,3 +215,16 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_k
         if Hour == 0 and Minute == 0:
             Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
         return Grid_3Phase_DaylyReactiveEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6
+
+#Função responsável por realizar a conexão com o broker
+def on_connect(client, userdata, rc):
+    print("Connected with result code "+str(rc))
+    client.subscribe("Supervisorio/Inversor1/Corrente")
+
+#Função on_message, responsável por exibir os valores enviados
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload.decode("utf-8")))
+
+@timeout(2)
+def mqtt_publish(Client_MQTT, Topic, Value):
+	Client_MQTT.publish(Topic, Value)

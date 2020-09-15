@@ -1,1 +1,5 @@
-Documents/Configurations/
+/Documents/Configurations
+/Include/*
+/Scripts/*
+/Lib/*
+pyvenv.cfg

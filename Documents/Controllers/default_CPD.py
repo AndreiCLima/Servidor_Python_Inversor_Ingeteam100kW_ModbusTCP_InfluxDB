@@ -51,17 +51,18 @@ def main():
            PV_Input          |          Total            |       InputVoltage      |      Instant       |   Vdc   | PV_Input_Total_InputVoltage_Instant_Vdc
 
 	"""
-
-	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,UserName,Password,DataBase)
 	Client_MQTT = mqtt.Client("CPD")
 	Client_MQTT.on_connect = on_connect
 	Client_MQTT.on_message = on_message
-	Client_MQTT.connect("mqtt.eclipse.org",1883,60)
-	for topic in range(len(Topics)):
-		Client_MQTT.subscribe(Topics[topic])
-	while True:
-		Client_MQTT.loop_start()
-		time.sleep(30)
+	try:
+		Client_MQTT.connect("mqtt.eclipse.org",1883,60)
+		for topic in range(len(Topics)):
+			Client_MQTT.subscribe(Topics[topic])
+		while True:
+			Client_MQTT.loop_start()
+			time.sleep(30)
+	except:
+		print("Broker ou InfluxDB Offline")
 
 def timeout(seconds):
 	"""
@@ -98,14 +99,16 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 		}
 	]
 	Client_InfluxDB.write_points(Json_Body_Message)
+	print("Dados Salvos no Banco de Dados")
 
 def on_connect(client, userdata, rc):
     print("Connected with result code "+str(rc))
-    client.subscribe("Supervisorio/Inversor1/Corrente")
 
 #Função on_message, responsável por exibir os valores enviados
 def on_message(client, userdata, msg):
-    print(msg.topic+" "+str(msg.payload.decode("utf-8")))
-    send_data_to_influx_db(msg.topic, msg.payload.decode("utf-8"))
+	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,UserName,Password,DataBase)
+	send_data_to_influx_db(Client_InfluxDB, msg.topic, msg.payload.decode("utf-8"))
+	print(msg.topic+" "+str(msg.payload.decode("utf-8")))
+
 
 

@@ -59,13 +59,13 @@ def main():
 	Control_Flag = False
 	Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
 	Ts = 60
-	Initial_Time = time.clock()
+	Initial_Time = time.time()
 	Client_MQTT = mqtt.Client("IngeTeam 100kW")
 	Client_MQTT.on_connect = on_connect
 	Client_MQTT.on_message = on_message
 	Client_MQTT.connect("mqtt.eclipse.org",1883,60)
 	while True:
-		print(time.clock())
+		print(time.time())
 		Client_MQTT.loop_start()
 		Input_Registers = []
 		#Client_ModBus.debug(True) 
@@ -138,11 +138,11 @@ def main():
 			for topic in range(len(Topics)):
 				mqtt_publish(Client_MQTT, Topics[topic], 0)
 			Grid_3Phase_DaylyReactiveEnergy_Today_kVArh = 0
-		Final_Time = time.clock()
+		Final_Time = time.time()
 		CPU_Process_Time = Final_Time - Initial_Time
 		print("Tempo de Processamento: %f"%(CPU_Process_Time))
 		time.sleep(Ts - CPU_Process_Time)
-		print(time.clock())
+		print(time.time())
 		Initial_Time = Initial_Time+60
 
 def timeout(seconds):

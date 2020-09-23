@@ -56,6 +56,7 @@ def main():
 	Client_MQTT.on_message = on_message
 	try:
 		Client_MQTT.connect("mqtt.eclipse.org",1883,60)
+		print("Conectado ao Broker")
 		for topic in range(len(Topics)):
 			Client_MQTT.subscribe(Topics[topic])
 		while True:

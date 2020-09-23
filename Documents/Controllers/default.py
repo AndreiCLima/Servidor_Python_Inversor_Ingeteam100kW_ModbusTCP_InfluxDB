@@ -217,12 +217,12 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_k
         return Grid_3Phase_DaylyReactiveEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6
 
 #Função responsável por realizar a conexão com o broker
-def on_connect(client, userdata, rc):
+def on_connect(Client_MQTT, userdata, rc):
     print("Connected with result code "+str(rc))
     client.subscribe("Supervisorio/Inversor1/Corrente")
 
 #Função on_message, responsável por exibir os valores enviados
-def on_message(client, userdata, msg):
+def on_message(Client_MQTT, userdata, msg):
     print(msg.topic+" "+str(msg.payload.decode("utf-8")))
 
 @timeout(2)

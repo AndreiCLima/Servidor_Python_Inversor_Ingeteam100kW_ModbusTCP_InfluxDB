@@ -2,8 +2,8 @@ from influxdb import InfluxDBClient
 from Documents.Configurations.Topics import Topics
 from Documents.Configurations.DataBaseConfigurations import DataBase, DataBaseHOST, DataBasePORT, UserName, Password 
 from datetime import datetime
-from multiprocessing import TimeoutError
-from multiprocessing.pool import ThreadPool
+#from multiprocessing import TimeoutError
+#from multiprocessing.pool import ThreadPool
 import paho.mqtt.client as mqtt
 import time
 
@@ -51,38 +51,44 @@ def main():
            PV_Input          |          Total            |       InputVoltage      |      Instant       |   Vdc   | PV_Input_Total_InputVoltage_Instant_Vdc
 
 	"""
-	Client_MQTT = mqtt.Client("CPD")
-	Client_MQTT.on_connect = on_connect
-	Client_MQTT.on_message = on_message
+	client = mqtt.Client("CPD")
+	client.on_connect = on_connect
+	client.on_message = on_message
 	try:
-		Client_MQTT.connect("mqtt.eclipse.org",1883,60)
+		client.connect("mqtt.eclipse.org",1883,60)
 		print("Conectado ao Broker")
-		for topic in range(len(Topics)):
-			Client_MQTT.subscribe(Topics[topic])
+		#for topic in Topics:
+		#	client.subscribe(topic)
+		#	print("Tópico subscrito: ",topic)
 		while True:
-			Client_MQTT.loop_start()
-			time.sleep(30)
+			print("Aguardando mensagens...")
+			client.loop_start()
+			#for topic in Topics:
+			#	client.subscribe(topic)
+			time.sleep(10)
+			for topic in Topics:
+				client.unsubscribe(topic)
 	except:
 		print("Broker ou InfluxDB Offline")
 
-def timeout(seconds):
-	"""
-	Responsável por gerar o timeout das funções
-	Entradas:
-		seconds: Valor em segundos do Timeout desejado
-	"""
-	def decorator(function):
-		def wrapper(*args, **kwargs):
-			pool = ThreadPool(processes=1)
-			result = pool.apply_async(function, args=args, kwds=kwargs)
-			try:
-				return result.get(timeout=seconds)
-			except TimeoutError as error:
-				return error
-		return wrapper
-	return decorator
+# def timeout(seconds):
+# 	"""
+# 	Responsável por gerar o timeout das funções
+# 	Entradas:
+# 		seconds: Valor em segundos do Timeout desejado
+# 	"""
+# 	def decorator(function):
+# 		def wrapper(*args, **kwargs):
+# 			pool = ThreadPool(processes=1)
+# 			result = pool.apply_async(function, args=args, kwds=kwargs)
+# 			try:
+# 				return result.get(timeout=seconds)
+# 			except TimeoutError as error:
+# 				return error
+# 		return wrapper
+# 	return decorator
 
-@timeout(5)
+#@timeout(5)
 def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	"""
 	Recebe o nome da Measurement e o seu valor
@@ -102,11 +108,14 @@ def send_data_to_influx_db(Client_InfluxDB,Measurement_Name, Measurement_Value):
 	Client_InfluxDB.write_points(Json_Body_Message)
 	print("Dados Salvos no Banco de Dados")
 
-def on_connect(client, userdata, rc):
-    print("Connected with result code "+str(rc))
+def on_connect(client, userdata, flag, rc):
+    print("Conectado, código de resultado: "+str(rc))
+    for topic in Topics:
+    	client.subscribe(topic)
 
 #Função on_message, responsável por exibir os valores enviados
 def on_message(client, userdata, msg):
+	print("Nova Mensagem")
 	Client_InfluxDB = InfluxDBClient(DataBaseHOST,DataBasePORT,UserName,Password,DataBase)
 	send_data_to_influx_db(Client_InfluxDB, msg.topic, msg.payload.decode("utf-8"))
 	print(msg.topic+" "+str(msg.payload.decode("utf-8")))

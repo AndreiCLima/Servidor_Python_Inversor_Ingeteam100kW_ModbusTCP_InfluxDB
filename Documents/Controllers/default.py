@@ -4,8 +4,6 @@ from pyModbusTCP.client import ModbusClient
 from Documents.Configurations.ModBusHost import HOST
 from Documents.Configurations.Topics import Topics 
 from datetime import datetime
-from multiprocessing import TimeoutError
-from multiprocessing.pool import ThreadPool
 import paho.mqtt.client as mqtt
 import time
 
@@ -143,24 +141,7 @@ def main():
 		print("Tempo de Processamento: %f"%(CPU_Process_Time))
 		time.sleep(Ts - CPU_Process_Time)
 		print(time.time())
-		Initial_Time = Initial_Time+60
-
-def timeout(seconds):
-	"""
-	Responsável por gerar o timeout das funções
-	Entradas:
-		seconds: Valor em segundos do Timeout desejado
-	"""
-	def decorator(function):
-		def wrapper(*args, **kwargs):
-			pool = ThreadPool(processes=1)
-			result = pool.apply_async(function, args=args, kwds=kwargs)
-			try:
-				return result.get(timeout=seconds)
-			except TimeoutError as error:
-				return error
-		return wrapper
-	return decorator
+		Initial_Time = Initial_Time+Ts
 
 		
 def convert_parameters_uint_32(Uint_32_Input_Registers_Most_Significant_Bits, Uint_32_Input_Registers_Less_Significant_Bits):
@@ -217,14 +198,12 @@ def grid_3Phase_dayly_energy_today_kVArh(Grid_3Phase_DaylyReactiveEnergy_Today_k
         return Grid_3Phase_DaylyReactiveEnergy_Today_kVArh + Ts * Grid_3Phase_OutputReactivePower_LastReset_VAr/3.6e6
 
 #Função responsável por realizar a conexão com o broker
-def on_connect(Client_MQTT, userdata, rc):
+def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
-    client.subscribe("Supervisorio/Inversor1/Corrente")
 
-#Função on_message, responsável por exibir os valores enviados
-def on_message(Client_MQTT, userdata, msg):
+#Função on_message, responsável por exibir os valores erunnviados
+def on_message(client, userdata, msg):
     print(msg.topic+" "+str(msg.payload.decode("utf-8")))
 
-@timeout(2)
 def mqtt_publish(Client_MQTT, Topic, Value):
 	Client_MQTT.publish(Topic, Value)

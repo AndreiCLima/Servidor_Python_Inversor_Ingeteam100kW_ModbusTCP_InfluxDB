@@ -1,4 +1,4 @@
-# Programa Principal, onde será rodado o servidor
+#  Programa Principal, onde será rodado o servidor
 # Importações:
 from pyModbusTCP.client import ModbusClient
 from Documents.Configurations.ModBusHost import HOST
@@ -63,7 +63,6 @@ def main():
 	Client_MQTT.on_message = on_message
 	Client_MQTT.connect("mqtt.eclipse.org",1883,60)
 	while True:
-		print(time.time())
 		Client_MQTT.loop_start()
 		Input_Registers = []
 		#Client_ModBus.debug(True) 
@@ -139,8 +138,8 @@ def main():
 		Final_Time = time.time()
 		CPU_Process_Time = Final_Time - Initial_Time
 		print("Tempo de Processamento: %f"%(CPU_Process_Time))
-		time.sleep(Ts - CPU_Process_Time)
-		print(time.time())
+		if Ts - CPU_Process_Time > 0:
+			time.sleep(Ts - CPU_Process_Time)
 		Initial_Time = Initial_Time+Ts
 
 		
@@ -207,3 +206,4 @@ def on_message(client, userdata, msg):
 
 def mqtt_publish(Client_MQTT, Topic, Value):
 	Client_MQTT.publish(Topic, Value)
+	time.sleep(0.3)

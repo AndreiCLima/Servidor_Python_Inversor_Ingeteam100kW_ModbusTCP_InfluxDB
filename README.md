@@ -14,6 +14,4 @@ Banco de Dados: InfluxDB
 
 Front-End: Graffana (não abordado aqui no repositório, pois acessa diretamente o InfluxDB)
 
-Rede para conexão com a Beaglebone Green: LPMI-206
-IP: 192.168.1.120
 
